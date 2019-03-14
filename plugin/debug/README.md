@@ -18,6 +18,21 @@ Note that the *errors* plugin (if loaded) will also set a `recover` negating thi
 debug
 ~~~
 
+Memory reporting is also supported with this expanded syntax:
+
+~~~ txt
+debug {
+    memory
+}
+~~~
+
+Using the `memory` directive will make CoreDNS print out the memory usage of the process every
+second:
+
+~~~
+2019-03-14T07:03:15.065Z [DEBUG] alloc:     2.2199 MiB, total alloc:     2.2199 MiB, system:    68.5627 MiB
+~~~
+
 Some plugin will debug log DNS messages. This is done in the following format:
 
 ~~~
@@ -45,4 +60,5 @@ Disable the ability to recover from crashes and show debug logging:
 
 ## Also See
 
-https://www.wireshark.org/docs/man-pages/text2pcap.html.
+<https://www.wireshark.org/docs/man-pages/text2pcap.html> and
+<https://golang.org/pkg/runtime/#MemStats>.

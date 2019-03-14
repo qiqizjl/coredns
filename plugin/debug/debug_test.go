@@ -15,13 +15,15 @@ func TestDebug(t *testing.T) {
 		expectedDebug bool
 	}{
 		// positive
-		{
-			`debug`, false, true,
-		},
+		{`debug`, false, true},
+		{`debug {
+			memory
+		}`, false, true},
 		// negative
-		{
-			`debug off`, true, false,
-		},
+		{`debug off`, true, false},
+		{`debug {
+			memori
+		}`, true, true},
 	}
 
 	for i, test := range tests {
@@ -30,7 +32,7 @@ func TestDebug(t *testing.T) {
 		cfg := dnsserver.GetConfig(c)
 
 		if test.shouldErr && err == nil {
-			t.Fatalf("Test %d: Expected error but found %s for input %s", i, err, test.input)
+			t.Fatalf("Test %d: Expected error but found none for input %s", i, test.input)
 		}
 
 		if err != nil {
