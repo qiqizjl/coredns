@@ -316,6 +316,29 @@ func (k *Kubernetes) findPods(r recordRequest, zone string) (pods []msg.Service,
 		return nil, errNoItems
 	}
 
+	//解析服务域名
+	for _, p := range k.APIConn.PodIndexName(podname) {
+		// If namespace has a wildcard, filter results against Corefile namespace list.
+		if wildcard(namespace) && !k.namespaceExposed(p.Namespace) {
+			continue
+		}
+
+		// exclude pods in the process of termination
+		if p.Deleting {
+			continue
+		}
+		// check for matching ip and namespace
+		if podname == p.Name && match(namespace, p.Namespace) {
+			s := msg.Service{Key: strings.Join([]string{zonePath, Pod, namespace, podname}, "/"), Host: ip, TTL: k.ttl}
+			pods = append(pods, s)
+
+			err = nil
+		}
+	}
+	if len(pods) > 0 {
+		return
+	}
+
 	if strings.Count(podname, "-") == 3 && !strings.Contains(podname, "--") {
 		ip = strings.Replace(podname, "-", ".", -1)
 	} else {
