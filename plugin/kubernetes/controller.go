@@ -79,7 +79,7 @@ type dnsControl struct {
 }
 
 type dnsControlOpts struct {
-	initPodCache       bool
+	initPodIpCache     bool
 	initEndpointsCache bool
 	resyncPeriod       time.Duration
 	ignoreEmptyService bool
@@ -112,20 +112,23 @@ func newdnsController(kubeClient kubernetes.Interface, opts dnsControlOpts) *dns
 		cache.Indexers{svcNameNamespaceIndex: svcNameNamespaceIndexFunc, svcIPIndex: svcIPIndexFunc},
 		object.ToService,
 	)
-
-	if opts.initPodCache {
-		dns.podLister, dns.podController = object.NewIndexerInformer(
-			&cache.ListWatch{
-				ListFunc:  podListFunc(dns.client, api.NamespaceAll, dns.selector),
-				WatchFunc: podWatchFunc(dns.client, api.NamespaceAll, dns.selector),
-			},
-			&api.Pod{},
-			opts.resyncPeriod,
-			cache.ResourceEventHandlerFuncs{},
-			cache.Indexers{podIPIndex: podIPIndexFunc, podNameIndex: podNameIndexFunc},
-			object.ToPod,
-		)
+	podCacheList := map[string]cache.IndexFunc{
+		podNameIndex: podNameIndexFunc,
 	}
+	if opts.initPodIpCache {
+		podCacheList[podIPIndex] = podIPIndexFunc
+	}
+	dns.podLister, dns.podController = object.NewIndexerInformer(
+		&cache.ListWatch{
+			ListFunc:  podListFunc(dns.client, api.NamespaceAll, dns.selector),
+			WatchFunc: podWatchFunc(dns.client, api.NamespaceAll, dns.selector),
+		},
+		&api.Pod{},
+		opts.resyncPeriod,
+		cache.ResourceEventHandlerFuncs{},
+		podCacheList,
+		object.ToPod,
+	)
 
 	if opts.initEndpointsCache {
 		dns.epLister, dns.epController = object.NewIndexerInformer(

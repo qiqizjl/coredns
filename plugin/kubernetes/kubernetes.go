@@ -217,7 +217,7 @@ func (k *Kubernetes) InitKubeCache() (err error) {
 		k.opts.selector = selector
 	}
 
-	k.opts.initPodCache = k.podMode == podModeVerified
+	k.opts.initPodIpCache = k.podMode == podModeVerified
 
 	k.opts.zones = k.Zones
 	k.opts.endpointNameMode = k.endpointNameMode
@@ -316,25 +316,6 @@ func (k *Kubernetes) findPods(r recordRequest, zone string) (pods []msg.Service,
 		return nil, errNoItems
 	}
 
-	if strings.Count(podname, "-") == 3 && !strings.Contains(podname, "--") {
-		ip = strings.Replace(podname, "-", ".", -1)
-	} else {
-		ip = strings.Replace(podname, "-", ":", -1)
-	}
-
-	if k.podMode == podModeInsecure {
-		if !wildcard(namespace) && !k.namespace(namespace) { // no wildcard, but namespace does not exist
-			return nil, errNoItems
-		}
-
-		// If ip does not parse as an IP address, we return an error, otherwise we assume a CNAME and will try to resolve it in backend_lookup.go
-		if net.ParseIP(ip) == nil {
-			return nil, errNoItems
-		}
-
-		return []msg.Service{{Key: strings.Join([]string{zonePath, Pod, namespace, podname}, "/"), Host: ip, TTL: k.ttl}}, err
-	}
-
 	// support pod-name.namespace.pod
 	for _, p := range k.APIConn.PodIndexName(podname) {
 		// If namespace has a wildcard, filter results against Corefile namespace list.
@@ -356,6 +337,25 @@ func (k *Kubernetes) findPods(r recordRequest, zone string) (pods []msg.Service,
 
 	if len(pods) > 0 {
 		return
+	}
+
+	if strings.Count(podname, "-") == 3 && !strings.Contains(podname, "--") {
+		ip = strings.Replace(podname, "-", ".", -1)
+	} else {
+		ip = strings.Replace(podname, "-", ":", -1)
+	}
+
+	if k.podMode == podModeInsecure {
+		if !wildcard(namespace) && !k.namespace(namespace) { // no wildcard, but namespace does not exist
+			return nil, errNoItems
+		}
+
+		// If ip does not parse as an IP address, we return an error, otherwise we assume a CNAME and will try to resolve it in backend_lookup.go
+		if net.ParseIP(ip) == nil {
+			return nil, errNoItems
+		}
+
+		return []msg.Service{{Key: strings.Join([]string{zonePath, Pod, namespace, podname}, "/"), Host: ip, TTL: k.ttl}}, err
 	}
 
 	// PodModeVerified

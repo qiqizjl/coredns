@@ -22,7 +22,7 @@ func (k *Kubernetes) AutoPath(state request.Request) []string {
 	//    }
 	// }
 	// if pods != verified will cause panic and return SERVFAIL, expect worked as normal without autopath function
-	if !k.opts.initPodCache {
+	if !k.opts.initPodIpCache {
 		return nil
 	}
 
